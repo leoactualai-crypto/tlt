@@ -1,0 +1,33 @@
+# Standardize Pydantic BaseModel for Input Validation in Logged Service Endpoints: Numeric Fields Validation
+
+These rules are ALWAYS ACTIVE for all FastAPI service endpoints that implement logging via `logging.getLogger(__name__)` or `loguru.logger` and accept external input.
+
+### Rules
+
+- **R-PYDANTIC-001** MUST: Numeric fields in validation models MUST use Field constraints (ge, le, gt, lt) where business logic requires bounded values.
+
+### Verify
+
+```bash
+# Count BaseModel definitions in adapter and service modules
+grep -r 'class.*BaseModel' monorepo/tlt/adapters/ monorepo/tlt/services/ | grep -v '__pycache__' | wc -l
+
+# Count router decorators with response_model parameter
+grep -r '@router\.(get|post|put|delete)' monorepo/tlt/ | grep 'response_model=' | wc -l
+
+# Count Field constraints and descriptions on numeric fields
+grep -r 'Field(' monorepo/tlt/ | grep -E '(ge=|le=|description=)' | wc -l
+
+# Count logging imports across codebase
+grep -r 'logging\.getLogger\|from loguru import logger' monorepo/tlt/ | wc -l
+```
+
+**Accept when:**
+- All FastAPI router endpoints that implement logging have corresponding Pydantic BaseModel definitions for request/response payloads
+- At least 80% of BaseModel fields include Field constraints or description metadata
+- Validation failures are logged at error level with sufficient context to correlate with input payloads
+- Response models are specified in @router decorators using response_model parameter
+
+<enforcement>
+Clause Code MUST NOT skip or defer verification. All new FastAPI endpoints with logging must include Pydantic BaseModel validation with Field constraints on numeric fields before merge.
+</enforcement>
